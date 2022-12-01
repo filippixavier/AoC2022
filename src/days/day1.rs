@@ -36,5 +36,15 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
+    let elves = get_input();
+    let mut elves_calories: Vec<usize> = elves
+        .iter()
+        .map(|inventory| inventory.iter().sum())
+        .collect();
+    elves_calories.sort();
+    println!(
+        "Amount of calories carried by the top 3: {}",
+        elves_calories.iter().rev().take(3).sum::<usize>()
+    );
     Ok(())
 }
