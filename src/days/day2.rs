@@ -63,10 +63,49 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
             }
         }
     }
-    println!("According to strategy guide, I should get {}", score);
+    println!("According to the strategy guide, I should get {}", score);
     Ok(())
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
+    let scoring = HashMap::from([('X', 0), ('Y', 3), ('Z', 6)]);
+    let rounds = get_input();
+    let mut score: usize = 0;
+    for round in rounds {
+        match round {
+            Rock(other) => {
+                score += scoring.get(&other).unwrap_or(&0);
+                score += match other {
+                    'X' => 3,
+                    'Y' => 1,
+                    'Z' => 2,
+                    _ => unreachable!(),
+                }
+            }
+            Paper(other) => {
+                score += scoring.get(&other).unwrap_or(&0);
+                score += match other {
+                    'X' => 1,
+                    'Y' => 2,
+                    'Z' => 3,
+                    _ => unreachable!(),
+                }
+            }
+            Scissors(other) => {
+                score += scoring.get(&other).unwrap_or(&0);
+                score += match other {
+                    'X' => 2,
+                    'Y' => 3,
+                    'Z' => 1,
+                    _ => unreachable!(),
+                }
+            }
+        }
+    }
+
+    println!(
+        "According to the REAL strategy guide, I should get {}",
+        score
+    );
     Ok(())
 }
