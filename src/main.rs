@@ -35,6 +35,10 @@ fn main() {
             first_star = days::day2::first_star;
             second_star = days::day2::second_star;
         }
+        3 => {
+            first_star = days::day3::first_star;
+            second_star = days::day3::second_star;
+        }
         _ => {
             println!("No day found matching input, exiting...");
             return;
