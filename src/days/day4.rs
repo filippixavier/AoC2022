@@ -37,5 +37,15 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
+    let groups = get_input();
+    let mut count = 0;
+    for (elf_1, elf_2) in groups {
+        if !(elf_1.1 < elf_2.0 || elf_1.0 > elf_2.1) {
+            count += 1;
+        }
+    }
+
+    println!("Number of colliding cleaning operations: {}", count);
+
     Ok(())
 }
