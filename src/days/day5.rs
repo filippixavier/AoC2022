@@ -69,5 +69,26 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
+    let (mut stacks, instructions) = get_input();
+
+    for step in instructions {
+        let from = &stacks[step[1] - 1];
+        let mut slice = from
+            .iter()
+            .skip(from.len() - step[0])
+            .cloned()
+            .collect::<VecDeque<_>>();
+        stacks[step[1] - 1] = from.iter().cloned().take(from.len() - step[0]).collect();
+        stacks[step[2] - 1].append(&mut slice);
+    }
+
+    let code = stacks.iter().fold(String::new(), |mut acc, ids| {
+        if let Some(id) = ids.back() {
+            acc.push(*id);
+        }
+        acc
+    });
+
+    println!("Crate code for 9001 is: {}", code);
     Ok(())
 }
