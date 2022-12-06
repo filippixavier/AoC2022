@@ -27,5 +27,17 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
+    let datastream = get_input();
+    let mut marker = datastream.chars().take(13).collect::<VecDeque<char>>();
+
+    for (index, value) in datastream.chars().skip(13).enumerate() {
+        marker.push_back(value);
+        let test: HashSet<char> = marker.iter().cloned().collect();
+        if test.len() == 14 {
+            println!("first start-of-message marker appears on {}", index + 14);
+            break;
+        }
+        marker.pop_front();
+    }
     Ok(())
 }
