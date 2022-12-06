@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::HashSet;
 use std::error::Error;
 use std::fs;
 use std::path::Path;
@@ -10,34 +10,34 @@ fn get_input() -> String {
         .to_string()
 }
 
-pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
-    let datastream = get_input();
-    let mut marker = datastream.chars().take(3).collect::<VecDeque<char>>();
-
-    for (index, value) in datastream.chars().skip(3).enumerate() {
-        marker.push_back(value);
-        let test: HashSet<char> = marker.iter().cloned().collect();
-        if test.len() == 4 {
-            println!("first start-of-packet marker appears on {}", index + 4);
-            break;
+fn get_marker(stream: Vec<char>, len: usize) -> usize {
+    for (index, input) in stream.windows(len).enumerate() {
+        let test: HashSet<char> = input.iter().cloned().collect();
+        if test.len() == len {
+            return index + len;
         }
-        marker.pop_front();
     }
+    0
+}
+
+pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
+    let datastream: Vec<_> = get_input().chars().collect();
+
+    println!(
+        "first start-of-packet marker appears on {}",
+        get_marker(datastream, 4)
+    );
+
     Ok(())
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    let datastream = get_input();
-    let mut marker = datastream.chars().take(13).collect::<VecDeque<char>>();
+    let datastream: Vec<_> = get_input().chars().collect();
 
-    for (index, value) in datastream.chars().skip(13).enumerate() {
-        marker.push_back(value);
-        let test: HashSet<char> = marker.iter().cloned().collect();
-        if test.len() == 14 {
-            println!("first start-of-message marker appears on {}", index + 14);
-            break;
-        }
-        marker.pop_front();
-    }
+    println!(
+        "first start-of-message marker appears on {}",
+        get_marker(datastream, 14)
+    );
+
     Ok(())
 }
