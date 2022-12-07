@@ -23,6 +23,22 @@ fn get_input() -> Vec<Vec<String>> {
         .collect()
 }
 
+fn compute_size(directories: &mut HashMap<String, Directory>, current: String) -> usize {
+    let current_dir = directories.get(&current).unwrap();
+    let childs = current_dir.childs.iter().cloned().collect::<Vec<_>>();
+    let mut total_size = current_dir.size;
+
+    for child in childs {
+        total_size += compute_size(directories, child);
+    }
+
+    if let Some(cur) = directories.get_mut(&current) {
+        cur.size = total_size;
+    }
+
+    total_size
+}
+
 fn explore() -> Vec<usize> {
     let root = String::from("/");
     let instructions = get_input();
@@ -41,20 +57,6 @@ fn explore() -> Vec<usize> {
                 if target == "/" {
                     path = vec![root.clone()];
                 } else if target == ".." {
-                    let mut sub_size = 0;
-                    let parents = if let Some(dir) = directories.get(&previous_folder_name) {
-                        sub_size = dir.size;
-                        dir.parents.clone()
-                    } else {
-                        HashSet::new()
-                    };
-
-                    for parent in parents {
-                        if let Some(dir) = directories.get_mut(&parent) {
-                            dir.size += sub_size
-                        }
-                    }
-
                     path.pop();
                     if path.is_empty() {
                         path = vec![root.clone()];
@@ -92,12 +94,7 @@ fn explore() -> Vec<usize> {
             let mut child_name = folder_name.split('.').collect::<Vec<_>>();
             child_name.push(&instruction[1]);
             let child_folder_name = child_name.join(".");
-            let mut sub_size = 0;
-            if let Some(child) = directories.get(&child_folder_name) {
-                sub_size = child.size;
-            }
             if let Some(dir) = directories.get_mut(&folder_name) {
-                dir.size += sub_size;
                 dir.childs.insert(child_folder_name);
             }
         } else {
@@ -107,6 +104,8 @@ fn explore() -> Vec<usize> {
             }
         }
     }
+
+    compute_size(&mut directories, String::from("/"));
 
     directories.values().map(|dir| dir.size).collect()
 }
@@ -127,5 +126,18 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
+    let mut sizes = explore();
+    sizes.sort();
+    let max = 70_000_000;
+    let required = 30_000_000;
+    let available = max - sizes.iter().max().unwrap_or(&0);
+
+    for size in sizes {
+        if available + size >= required {
+            println!("Total size of deleted directory: {}", size);
+            break;
+        }
+    }
+
     Ok(())
 }
