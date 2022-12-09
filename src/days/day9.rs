@@ -91,11 +91,37 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
         }
     }
 
-    println!("Number of positions visited by the rope: {}", trail.len());
+    println!(
+        "Number of positions visited by the tail of a 1 knot rope: {}",
+        trail.len()
+    );
 
     Ok(())
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
+    let instructions = get_input();
+    let mut trail: Trail = HashSet::new();
+
+    let mut rope: [Coordinates; 10] = [(0, 0); 10];
+
+    for (dir, steps) in instructions {
+        for _ in 0..steps {
+            for i in 0..10 {
+                rope[i] = if i == 0 {
+                    move_head(rope[i], dir)
+                } else {
+                    move_tail(rope[i], &rope[i - 1])
+                };
+            }
+            trail.insert(*rope.last().unwrap());
+        }
+    }
+
+    println!(
+        "Number of positions visited the tail of a 10 knot rope: {}",
+        trail.len()
+    );
+
     Ok(())
 }
