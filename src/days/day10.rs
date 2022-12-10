@@ -62,5 +62,36 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
+    let input = get_input();
+    let mut reg = 1;
+    let mut crt = [' '; 240];
+
+    let ops: Vec<Option<isize>> = input
+        .iter()
+        .flat_map(|op| {
+            if let Addx(x) = op {
+                vec![None, Some(*x)]
+            } else {
+                vec![None]
+            }
+        })
+        .collect();
+
+    for (cycle, op) in ops.iter().enumerate() {
+        let cy = (cycle % 40) as isize;
+        if reg == cy || reg + 1 == cy || reg - 1 == cy {
+            crt[cycle] = '#';
+        }
+        if let Some(x) = op {
+            reg += *x;
+        }
+    }
+
+    println!("The CRT display the following message:");
+
+    for line in crt.chunks(40) {
+        println!("{}", line.iter().collect::<String>());
+    }
+
     Ok(())
 }
