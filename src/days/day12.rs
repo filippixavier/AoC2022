@@ -34,7 +34,7 @@ fn get_input() -> (Coordinates, Coordinates, Map) {
     (start, end, map)
 }
 
-fn bfs(start: Coordinates, end: Coordinates, map: Map) -> usize {
+fn bfs(start: Coordinates, end: Coordinates, map: &Map) -> usize {
     let mut visited: HashSet<Coordinates> = HashSet::new();
     let mut to_visit: VecDeque<(Coordinates, usize)> = VecDeque::new();
 
@@ -88,10 +88,38 @@ fn bfs(start: Coordinates, end: Coordinates, map: Map) -> usize {
 
 pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
     let (start, end, map) = get_input();
-    println!("{}", bfs(start, end, map));
+    println!("The shortest path is {} units long", bfs(start, end, &map));
     Ok(())
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
+    let (_, end, map) = get_input();
+    let mut min = usize::MAX;
+
+    let starts = map
+        .iter()
+        .enumerate()
+        .flat_map(|(line_no, line)| {
+            line.iter()
+                .enumerate()
+                .filter_map(move |(col_no, col)| {
+                    if *col == 0 {
+                        Some((line_no, col_no))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    for start in starts {
+        let result = bfs(start, end, &map);
+        if result != 0 {
+            min = min.min(result);
+        }
+    }
+
+    println!("The shortest path of all from a to z is {} units long", min);
     Ok(())
 }
