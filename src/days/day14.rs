@@ -147,5 +147,63 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
+    let path = get_input();
+    let (mut sand_map, _) = get_map(&path);
+
+    let floor = sand_map.keys().map(|(_, y)| y).max().unwrap() + 2;
+
+    let start_sand = (500, 0);
+    let mut current_sand = start_sand;
+    let mut is_entry_blocked = false;
+    let mut is_settled = true;
+
+    while !is_entry_blocked {
+        if is_settled {
+            current_sand = start_sand;
+            sand_map.insert(current_sand, Sand);
+            is_settled = false;
+        }
+
+        let inspect = [
+            (current_sand.0, current_sand.1 + 1),
+            (current_sand.0 - 1, current_sand.1 + 1),
+            (current_sand.0 + 1, current_sand.1 + 1),
+        ];
+
+        let mut moved = false;
+
+        for possible in inspect {
+            if possible.1 != floor && sand_map.get(&possible).is_none() {
+                sand_map.remove(&current_sand);
+                sand_map.insert(possible, Sand);
+                current_sand = possible;
+                moved = true;
+                break;
+            }
+        }
+
+        if !moved {
+            is_settled = true;
+        }
+
+        if current_sand == start_sand && is_settled {
+            is_entry_blocked = true;
+        }
+    }
+
+    println!("Full map visualization with floor:");
+    visualize(&sand_map);
+
+    println!(
+        "Amount of rested sand (including floor): {}",
+        sand_map.values().fold(0, |acc, x| {
+            if let Sand = x {
+                acc + 1
+            } else {
+                acc
+            }
+        })
+    );
+
     Ok(())
 }
