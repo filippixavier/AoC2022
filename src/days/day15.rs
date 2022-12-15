@@ -20,9 +20,14 @@ impl Sensor {
             range,
         }
     }
-    fn cannot_be_beacon(&self, ping: Coordinate) -> bool {
+    fn cannot_be_beacon(&self, ping: Coordinate, exclude_own: bool) -> bool {
         let range = (self.position.0 - ping.0).abs() + (self.position.1 - ping.1).abs();
-        range <= self.range && (ping != self.beacon)
+        let in_range = range <= self.range;
+        if exclude_own {
+            in_range && (ping != self.beacon)
+        } else {
+            in_range
+        }
     }
 }
 
@@ -74,7 +79,7 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
         .filter(|x| {
             sensors
                 .iter()
-                .any(|sensor| sensor.cannot_be_beacon((*x, target_y)))
+                .any(|sensor| sensor.cannot_be_beacon((*x, target_y), true))
         })
         .count();
 
@@ -83,5 +88,37 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
+    let max = 4_000_000;
+    let sensors = get_input();
+    let mut beacon_coordinates = (0, 0);
+
+    'outer: for y in 0..=max {
+        let mut x = 0;
+        let mut old_x;
+        while x <= max {
+            old_x = x;
+            let mut found = true;
+            for sensor in sensors.iter() {
+                if sensor.cannot_be_beacon((x, y), false) {
+                    x = sensor.position.0 + (x - sensor.position.0).abs() + 1;
+                    found = false;
+                    break;
+                }
+            }
+            if found {
+                beacon_coordinates = (x, y);
+                break 'outer;
+            }
+            if old_x == x {
+                println!("Infinite loop?");
+            }
+        }
+    }
+
+    println!(
+        "Distress beacon tuning frequency: {}",
+        beacon_coordinates.0 * 4_000_000 + beacon_coordinates.1
+    );
+
     Ok(())
 }
