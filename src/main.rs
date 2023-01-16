@@ -20,7 +20,7 @@ fn main() {
         Ok(_) => {
             day = buffer.trim_end().parse().unwrap_or(0);
             if day > 0 {
-                println!("Attemptin to run day {}...", day);
+                println!("Attempting to run day {}...", day);
             }
         }
         Err(error) => println!("Error: {}", error),
@@ -98,6 +98,10 @@ fn main() {
         18 => {
             first_star = days::day18::first_star;
             second_star = days::day18::second_star;
+        }
+        19 => {
+            first_star = days::day19::first_star;
+            second_star = days::day19::second_star;
         }
         _ => {
             println!("No day found matching input, exiting...");
