@@ -105,9 +105,7 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
                 .collect();
         }
 
-        println!("{}", ql);
-
-        total_ql += (ql * (bp_index + 1));
+        total_ql += ql * (bp_index + 1);
     }
 
     println!("Total quality level of blueprints is: {}", total_ql);
@@ -116,5 +114,80 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
+    let max_turn = 32;
+    let blueprints = get_input().into_iter().take(3).collect::<Vec<_>>();
+
+    let mut max_geode = 0;
+
+    for blueprint in blueprints.iter() {
+        let mut duplicates: HashSet<String> = HashSet::new();
+        let mut ql = 0;
+        let mut config: Vec<(usize, [usize; 4], [usize; 4], usize)> =
+            vec![(1, [0, 0, 0, 0], [1, 0, 0, 0], 0)];
+        let mut min_geodes = 1;
+
+        while !config.is_empty() {
+            let mut next_config = vec![];
+            for (steps, resources, robots, total_geodes) in config {
+                if !duplicates.insert(format!("{}-{:?}-{:?}", steps, resources, robots)) {
+                    continue;
+                }
+                if steps > max_turn {
+                    ql = ql.max(resources[3]);
+                    continue;
+                }
+
+                for (index, robot_cost) in blueprint.iter().enumerate() {
+                    if robot_cost
+                        .iter()
+                        .enumerate()
+                        .all(|(i, cost)| cost <= &resources[i])
+                    {
+                        let next_resources: [usize; 4] = resources
+                            .iter()
+                            .enumerate()
+                            .map(|(i, res)| *res - robot_cost[i] + robots[i])
+                            .collect::<Vec<_>>()
+                            .try_into()
+                            .unwrap();
+                        let mut next_robots = robots;
+                        next_robots[index] += 1;
+
+                        let mut next_total = total_geodes;
+
+                        if index == 3 {
+                            next_total += min_potential(steps + 1, max_turn);
+                            min_geodes = min_geodes.max(next_total);
+                        }
+                        next_config.push((steps + 1, next_resources, next_robots, next_total));
+                    }
+                }
+
+                let next_resources: [usize; 4] = resources
+                    .iter()
+                    .enumerate()
+                    .map(|(i, res)| *res + robots[i])
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap();
+
+                next_config.push((steps + 1, next_resources, robots, total_geodes));
+            }
+            config = next_config
+                .into_iter()
+                .filter(|(steps, _, _, total_geodes)| {
+                    max_potential(steps + 1, max_turn) + total_geodes >= min_geodes
+                })
+                .collect();
+        }
+
+        max_geode *= ql;
+    }
+
+    println!(
+        "Max geodes for the first 3 blueprints after {} turns is: {}",
+        max_turn, max_geode
+    );
+
     Ok(())
 }
