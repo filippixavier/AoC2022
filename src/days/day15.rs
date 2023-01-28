@@ -71,7 +71,6 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
         sensor.position.1 + sensor.range >= target_y && sensor.position.1 - sensor.range <= target_y
     });
 
-    println!("Total tiles on row {}: {}", target_y, range_x.1 - range_x.0);
     println!("Sensors in range: {}", sensors.len());
 
     let covered = (range_x.0..=range_x.1)
@@ -100,7 +99,7 @@ pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
             let mut found = true;
             for sensor in sensors.iter() {
                 if sensor.cannot_be_beacon((x, y), false) {
-                    x = sensor.position.0 + (x - sensor.position.0).abs() + 1;
+                    x = sensor.position.0 + (sensor.range - (sensor.position.1 - y).abs()) + 1;
                     found = false;
                     break;
                 }
