@@ -31,6 +31,8 @@ impl Sensor {
     }
 }
 
+// See https://github.com/Crazytieguy/advent-of-code/blob/2e01e7a016bb5f270d4878b53ce3ef46beb3625b/2022/src/bin/day15/main.rs for a faster way to do it
+
 fn get_input() -> Vec<Sensor> {
     let reg = Regex::new(r"(-?\d+).*?(-?\d+).*?(-?\d+).*?(-?\d+)").unwrap();
     let mut beacons = vec![];
