@@ -1,17 +1,19 @@
+use core::time;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::error::Error;
-use std::fs;
 use std::path::Path;
+use std::{fs, path};
 
 use itertools::Itertools;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Valve {
     flow_rate: usize,
     leads: Vec<String>,
 }
 
 type Network = HashMap<String, Valve>;
+type Memoize = HashMap<String, HashMap<String, usize>>;
 
 fn get_input() -> Network {
     fs::read_to_string(Path::new("./input/day16.input"))
@@ -38,61 +40,12 @@ fn get_input() -> Network {
         .collect()
 }
 
-#[derive(Clone, Debug)]
-struct Cell<'a> {
-    flow: usize,
-    time: usize,
-    path: Vec<&'a str>,
-}
-
-#[derive(Clone, Debug)]
-struct Matrix<'a> {
-    cells: HashMap<(&'a str, &'a str), Cell<'a>>,
-    vertices: Vec<&'a str>,
-}
-
-impl<'a> Matrix<'a> {
-    fn new(network: &'a Network) -> Self {
-        let mut cells = HashMap::new();
-
-        for (name, valve) in network {
-            for target in &valve.leads {
-                cells.insert(
-                    (target.as_str(), name.as_str()),
-                    Cell {
-                        flow: valve.flow_rate,
-                        time: 1,
-                        path: vec![target.as_str(), name.as_str()],
-                    },
-                );
-            }
-        }
-
-        Matrix {
-            cells,
-            vertices: network.keys().map(|key| key.as_str()).collect(),
-        }
-    }
-
-    fn max_flow_at(&self, turns: usize) -> Self {
-        let mut clone = self.clone();
-        for permutation in self.vertices.iter().permutations(3) {
-            let (start, end, intermediate) = (*permutation[0], *permutation[1], *permutation[2]);
-
-            let cell = clone.cells.get_mut(&(start, end)).unwrap();
-            let left_part = self.cells.get(&(start, intermediate)).unwrap();
-            let right_part = self.cells.get(&(intermediate, end)).unwrap();
-        }
-        clone
-    }
-}
-
 fn get_score(
     start: String,
     end: String,
     remaining_time: usize,
     network: &Network,
-    memoize: &mut HashMap<String, HashMap<String, usize>>,
+    memoize: &mut Memoize,
 ) -> Option<(String, usize, usize)> {
     let flow = network.get(&end).unwrap().flow_rate;
     if flow == 0 {
@@ -189,203 +142,87 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
     Ok(())
 }
 
+#[derive(Debug, Clone)]
+struct Cells {
+    time: usize,
+    covered: HashSet<String>,
+}
+
+#[derive(Debug, Clone)]
+struct Matrix<'a> {
+    max_time: usize,
+    cells: HashMap<(&'a str, &'a str), Cells>,
+    memoize: Memoize,
+    network: &'a Network,
+    start: &'a str,
+}
+
+impl<'a> Matrix<'a> {
+    fn new(network: &'a Network, start: &'a str, max_time: usize) -> Self {
+        let mut memoize = HashMap::new();
+
+        let mut cells = HashMap::new();
+
+        for paths in network
+            .iter()
+            .filter_map(|(key, valve)| {
+                if *key == start || valve.flow_rate > 0 {
+                    Some(key)
+                } else {
+                    None
+                }
+            })
+            .permutations(2)
+        {
+            let (start, end) = (paths[0], paths[1]);
+            let (_, time_after_move, total_score) =
+                get_score(start.clone(), end.clone(), max_time, &network, &mut memoize).unwrap();
+            cells.insert(
+                (start.as_str(), end.as_str()),
+                Cells {
+                    time: time_after_move,
+                    covered: HashSet::from([String::from(end)]),
+                },
+            );
+        }
+        Matrix {
+            max_time,
+            cells,
+            memoize,
+            network,
+            start,
+        }
+    }
+
+    fn next_turn(self) -> Self {
+        let mut next_matrix = self.clone();
+
+        for (permutations, start) in self
+            .network
+            .iter()
+            .filter_map(|(key, valve)| if valve.flow_rate > 0 { Some(key) } else { None })
+            .permutations(2)
+            .cartesian_product(vec![self.start].into_iter())
+        {
+            let (end, intermediate) = (permutations[0].as_str(), permutations[1].as_str());
+            if let Some(direct_path) = self.cells.get(&(start, end)) {
+                let left_path = self.cells.get(&(start, intermediate)).unwrap();
+                let right_path = self.cells.get(&(intermediate, end));
+            } else {
+                continue;
+            }
+        }
+
+        next_matrix
+    }
+}
+
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
     let network = get_input();
-    let matrix = Matrix::new(&network);
-    println!("{:?}", matrix);
-    let mut max_pressure = 0;
+    let max_pressure = 0;
     println!(
         "At most, in 26 minutes, you and your elephant can free {} pressure",
         max_pressure
     );
     Ok(())
 }
-// pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-//     let network = get_input();
-
-//     let mut memoize = HashMap::new();
-
-//     let remaining_valves = network
-//         .iter()
-//         .filter_map(|(name, valve)| {
-//             if name != "AA" && valve.flow_rate > 0 {
-//                 Some(name)
-//             } else {
-//                 None
-//             }
-//         })
-//         .collect::<Vec<_>>();
-
-//     let mut queue: VecDeque<_> =
-//         VecDeque::from(vec![("AA", 26, "AA", 26, remaining_valves, 0, 26)]);
-
-//     let mut max_pressure = 0;
-
-//     while !queue.is_empty() {
-//         let (
-//             p1_start,
-//             p1_ready_time,
-//             p2_start,
-//             p2_ready_time,
-//             available_valves,
-//             score,
-//             remaining_time,
-//         ) = queue.pop_front().unwrap();
-
-//         max_pressure = max_pressure.max(score);
-
-//         if available_valves.is_empty() || remaining_time == 0 {
-//             break;
-//             continue;
-//         }
-
-//         if p1_ready_time == p2_ready_time && available_valves.len() >= 2 {
-//             let iter: Vec<_> = if p1_start == "AA" {
-//                 available_valves.iter().combinations(2).collect()
-//             } else {
-//                 available_valves.iter().permutations(2).collect()
-//             };
-//             for targets in iter {
-//                 let p1_end = *targets[0];
-//                 let mut next_p1_ready = 0;
-//                 let mut next_score = score;
-//                 let mut remaining_valves = available_valves.clone();
-//                 if let Some((_, ready_time, score_to_add)) = get_score(
-//                     String::from(p1_start),
-//                     String::from(p1_end),
-//                     p1_ready_time,
-//                     &network,
-//                     &mut memoize,
-//                 ) {
-//                     next_p1_ready = ready_time;
-//                     next_score += score_to_add;
-//                     remaining_valves = remaining_valves
-//                         .into_iter()
-//                         .filter(|&name| name != p1_end)
-//                         .collect();
-//                 }
-
-//                 let p2_end = *targets[1];
-//                 let mut next_p2_ready = 0;
-
-//                 if let Some((_, ready_time, score_to_add)) = get_score(
-//                     String::from(p2_start),
-//                     String::from(p2_end),
-//                     p2_ready_time,
-//                     &network,
-//                     &mut memoize,
-//                 ) {
-//                     next_p2_ready = ready_time;
-//                     next_score += score_to_add;
-//                     remaining_valves = remaining_valves
-//                         .into_iter()
-//                         .filter(|&name| name != p2_end)
-//                         .collect();
-//                 }
-
-//                 queue.push_back((
-//                     p1_end,
-//                     next_p1_ready,
-//                     p2_end,
-//                     next_p2_ready,
-//                     remaining_valves,
-//                     next_score,
-//                     next_p1_ready.max(next_p2_ready),
-//                 ))
-//             }
-//         } else if p1_ready_time == remaining_time && available_valves.len() >= 2 {
-//             for target in available_valves.iter() {
-//                 let p1_end = *target;
-//                 if let Some((_, ready_time, added_score)) = get_score(
-//                     String::from(p1_start),
-//                     String::from(p1_end),
-//                     p1_ready_time,
-//                     &network,
-//                     &mut memoize,
-//                 ) {
-//                     let remaining_valves = available_valves
-//                         .iter()
-//                         .cloned()
-//                         .filter(|&name| name != p1_end)
-//                         .collect();
-
-//                     queue.push_back((
-//                         p1_end,
-//                         ready_time,
-//                         p2_start,
-//                         p2_ready_time,
-//                         remaining_valves,
-//                         score + added_score,
-//                         ready_time.max(p2_ready_time),
-//                     ));
-//                 }
-//             }
-//         } else if p2_ready_time == remaining_time && available_valves.len() >= 2 {
-//             for target in available_valves.iter() {
-//                 let p2_end = *target;
-//                 if let Some((_, ready_time, added_score)) = get_score(
-//                     String::from(p2_start),
-//                     String::from(p2_end),
-//                     p2_ready_time,
-//                     &network,
-//                     &mut memoize,
-//                 ) {
-//                     let remaining_valves = available_valves
-//                         .iter()
-//                         .cloned()
-//                         .filter(|&name| name != p2_end)
-//                         .collect();
-
-//                     queue.push_back((
-//                         p1_start,
-//                         p1_ready_time,
-//                         p2_end,
-//                         ready_time,
-//                         remaining_valves,
-//                         score + added_score,
-//                         ready_time.max(p1_ready_time),
-//                     ));
-//                 }
-//             }
-//         } else {
-//             let target = available_valves[0];
-//             let mut max = 0;
-
-//             if let Some((_, _, score)) = get_score(
-//                 String::from(p1_start),
-//                 String::from(target),
-//                 p1_ready_time,
-//                 &network,
-//                 &mut memoize,
-//             ) {
-//                 max = score;
-//             }
-
-//             if let Some((_, _, score)) = get_score(
-//                 String::from(p1_start),
-//                 String::from(target),
-//                 p1_ready_time,
-//                 &network,
-//                 &mut memoize,
-//             ) {
-//                 max = max.max(score);
-//             }
-
-//             queue.push_back((
-//                 p1_start,
-//                 p1_ready_time,
-//                 p2_start,
-//                 p2_ready_time,
-//                 vec![],
-//                 score + max,
-//                 p1_ready_time,
-//             ));
-//         }
-//     }
-
-//     println!(
-//         "At most, in 26 minutes, you and your elephant can free {} pressure",
-//         max_pressure
-//     );
-//     Ok(())
-// }
