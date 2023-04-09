@@ -142,87 +142,31 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
     Ok(())
 }
 
-#[derive(Debug, Clone)]
-struct Cells {
-    time: usize,
-    covered: HashSet<String>,
-}
-
-#[derive(Debug, Clone)]
-struct Matrix<'a> {
-    max_time: usize,
-    cells: HashMap<(&'a str, &'a str), Cells>,
-    memoize: Memoize,
-    network: &'a Network,
-    start: &'a str,
-}
-
-impl<'a> Matrix<'a> {
-    fn new(network: &'a Network, start: &'a str, max_time: usize) -> Self {
-        let mut memoize = HashMap::new();
-
-        let mut cells = HashMap::new();
-
-        for paths in network
-            .iter()
-            .filter_map(|(key, valve)| {
-                if *key == start || valve.flow_rate > 0 {
-                    Some(key)
-                } else {
-                    None
-                }
-            })
-            .permutations(2)
-        {
-            let (start, end) = (paths[0], paths[1]);
-            let (_, time_after_move, total_score) =
-                get_score(start.clone(), end.clone(), max_time, &network, &mut memoize).unwrap();
-            cells.insert(
-                (start.as_str(), end.as_str()),
-                Cells {
-                    time: time_after_move,
-                    covered: HashSet::from([String::from(end)]),
-                },
-            );
-        }
-        Matrix {
-            max_time,
-            cells,
-            memoize,
-            network,
-            start,
-        }
-    }
-
-    fn next_turn(self) -> Self {
-        let mut next_matrix = self.clone();
-
-        for (permutations, start) in self
-            .network
-            .iter()
-            .filter_map(|(key, valve)| if valve.flow_rate > 0 { Some(key) } else { None })
-            .permutations(2)
-            .cartesian_product(vec![self.start].into_iter())
-        {
-            let (end, intermediate) = (permutations[0].as_str(), permutations[1].as_str());
-            if let Some(direct_path) = self.cells.get(&(start, end)) {
-                let left_path = self.cells.get(&(start, intermediate)).unwrap();
-                let right_path = self.cells.get(&(intermediate, end));
-            } else {
-                continue;
-            }
-        }
-
-        next_matrix
-    }
-}
-
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
     let network = get_input();
-    let max_pressure = 0;
-    println!(
-        "At most, in 26 minutes, you and your elephant can free {} pressure",
-        max_pressure
-    );
+
+    let reachables = network
+        .iter()
+        .filter_map(|(key, valve)| {
+            if valve.flow_rate > 0 {
+                Some(key.clone())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let mut time: Vec<Vec<(String, Vec<String>, usize)>> = vec![];
+
+    time[0] = vec![(String::from("AA"), reachables, 0)];
+
+    for i in 0..30 {
+        if let Some(cancidates) = time.get(i) {
+            for 
+        } else {
+            continue;
+        }
+    }
+
     Ok(())
 }
